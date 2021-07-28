@@ -18,7 +18,7 @@
     "task": "yarn hardhat --config tasks.config.ts",
     "task:fork": "yarn hardhat --config tasks-fork.config.ts",
     "test": "yarn hardhat test",
-    "test:fork": "yarn hardhat --config hardhat-fork.config.ts test ./test-fork/*.spec.ts"
+    "test:fork": "yarn compile && yarn hardhat --config hardhat-fork.config.ts test ./test-fork/*.spec.ts"
   },
   "devDependencies": {
     "@mstable/protocol": "mstable/mStable-contracts#2a95259",
