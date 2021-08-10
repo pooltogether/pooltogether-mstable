@@ -67,25 +67,6 @@
       {
         "indexed": true,
         "internalType": "address",
-        "name": "sponsor",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "mAssetAmount",
-        "type": "uint256"
-      }
-    ],
-    "name": "Sponsored",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
         "name": "from",
         "type": "address"
       },
@@ -212,12 +193,12 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "mAssetAmount",
+        "name": "_mAssetAmount",
         "type": "uint256"
       },
       {
         "internalType": "address",
-        "name": "to",
+        "name": "_to",
         "type": "address"
       }
     ],

@@ -1,6 +1,7 @@
 import "@nomiclabs/hardhat-waffle"
 import "@typechain/hardhat"
 import "hardhat-abi-exporter"
+import 'hardhat-dependency-compiler'
 import "hardhat-gas-reporter"
 import "solidity-coverage"
 import "tsconfig-paths/register"
@@ -33,6 +34,11 @@ const hardhatConfig = {
         only: ["MStableYieldSource"],
     },
     paths: { artifacts: "./build" },
+    dependencyCompiler: {
+        paths: [
+            '@mstable/protocol/contracts/masset/Masset.sol',
+        ],
+    },
     gasReporter: {
         currency: "USD",
         gasPrice: 30,
