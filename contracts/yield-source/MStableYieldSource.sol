@@ -21,11 +21,6 @@ contract MStableYieldSource is IYieldSource, ReentrancyGuard {
     /// @param savings The ISavingsContractV2 to bind to
     event Initialized(ISavingsContractV2 indexed savings);
 
-    /// @notice Emitted when asset tokens are supplied to sponsor the yield source
-    /// @param sponsor The address who sponsored
-    /// @param mAssetAmount The amount of deposit token that was sponsored
-    event Sponsored(address indexed sponsor, uint256 mAssetAmount);
-
     /// @notice Emitted when asset tokens are supplied to earn yield
     /// @param from The address who supplied the assets
     /// @param to The new owner of the assets
@@ -78,13 +73,12 @@ contract MStableYieldSource is IYieldSource, ReentrancyGuard {
     }
 
     /// @notice Deposits mAsset tokens to the savings contract.
-    /// @param mAssetAmount The amount of mAsset tokens to be deposited. eg mUSD
-    function supplyTokenTo(uint256 mAssetAmount, address to) external override nonReentrant {
-        mAsset.safeTransferFrom(msg.sender, address(this), mAssetAmount);
-        uint256 creditsIssued = savings.depositSavings(mAssetAmount);
-        imBalances[to] += creditsIssued;
+    /// @param _mAssetAmount The amount of mAsset tokens to be deposited. eg mUSD
+    function supplyTokenTo(uint256 _mAssetAmount, address _to) external override nonReentrant {
+        mAsset.safeTransferFrom(msg.sender, address(this), _mAssetAmount);
+        imBalances[_to] += savings.depositSavings(_mAssetAmount);
 
-        emit Supplied(msg.sender, to, mAssetAmount);
+        emit Supplied(msg.sender, _to, _mAssetAmount);
     }
 
     /// @notice Redeems mAsset tokens from the interest-beaing mAsset.
@@ -96,7 +90,7 @@ contract MStableYieldSource is IYieldSource, ReentrancyGuard {
         override
         nonReentrant
         returns (uint256 mAssetsActual)
-    {   
+    {
         uint256 mAssetBalanceBefore = mAsset.balanceOf(address(this));
 
         uint256 creditsBurned = savings.redeemUnderlying(mAssetAmount);
