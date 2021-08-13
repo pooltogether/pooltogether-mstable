@@ -52,7 +52,11 @@ contract MStableYieldSource is IYieldSource, ReentrancyGuard {
     /// @dev Emergency function to re-approve max amount if approval amount dropped too low.
     /// @return true if operation is successful.
     function approveMaxAmount() external returns (bool) {
-        mAsset.safeApprove(address(savings), type(uint256).max);
+        IERC20 _mAsset = mAsset;
+        address _savings = address(savings);
+
+        uint256 _allowance = _mAsset.allowance(address(this), _savings);
+        _mAsset.safeIncreaseAllowance(_savings, type(uint256).max - _allowance);
 
         return true;
     }

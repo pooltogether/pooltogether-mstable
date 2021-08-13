@@ -18,7 +18,9 @@ import { MassetMachine, StandardAccounts } from "@utils/machines";
 import { expect } from "chai";
 import { ethers, waffle } from "hardhat";
 
-import { MStableYieldSource } from "../types/pooltogether";
+import { MStableYieldSourceHarness } from "../types/pooltogether";
+
+const { MaxUint256 } = ethers.constants;
 
 const toWei = ethers.utils.parseEther;
 
@@ -32,11 +34,11 @@ describe("MStableYieldSource", () => {
     let bAsset2: MockERC20;
     let bAssets: MockERC20[];
     let mAssetMachine: MassetMachine;
-    let mStableYieldSource: MStableYieldSource;
+    let mStableYieldSource: MStableYieldSourceHarness;
     let mUSD: MockMasset;
     let nexus: MockNexus;
     let sa: StandardAccounts;
-    let savingsContract: SavingsContract;
+    let savings: SavingsContract;
     let savingsFactory: SavingsContract__factory;
 
     const createNewSavingsContract = async (): Promise<void> => {
@@ -46,9 +48,9 @@ describe("MStableYieldSource", () => {
         const data = impl.interface.encodeFunctionData("initialize", [sa.default.address, "Savings Credit", "imUSD"]);
         const proxy = await new AssetProxy__factory(sa.default.signer).deploy(impl.address, sa.dummy4.address, data);
 
-        savingsContract = savingsFactory.attach(proxy.address);
+        savings = savingsFactory.attach(proxy.address);
 
-        const mockSavingsManager = await new MockSavingsManager__factory(sa.default.signer).deploy(savingsContract.address);
+        const mockSavingsManager = await new MockSavingsManager__factory(sa.default.signer).deploy(savings.address);
         await nexus.setSavingsManager(mockSavingsManager.address);
     };
 
@@ -79,13 +81,30 @@ describe("MStableYieldSource", () => {
 
         createNewSavingsContract();
 
-        const mStableYieldSourceFactory = await ethers.getContractFactory("MStableYieldSource");
-        const hardhatMStableYieldSource = await mStableYieldSourceFactory.deploy(savingsContract.address);
+        const mStableYieldSourceFactory = await ethers.getContractFactory("MStableYieldSourceHarness");
+        const hardhatMStableYieldSource = await mStableYieldSourceFactory.deploy(savings.address);
 
         mStableYieldSource = (await ethers.getContractAt(
-            "MStableYieldSource",
+            "MStableYieldSourceHarness",
             hardhatMStableYieldSource.address,
             contractsOwner,
-        )) as unknown as MStableYieldSource;
+        )) as unknown as MStableYieldSourceHarness;
+    });
+
+    describe('approveMaxAmount()', () => {
+        it('should approve mStable savings to spend max uint256 amount of mUSD', async () => {
+            await mStableYieldSource.decreaseAllowance(mUSD.address, savings.address, MaxUint256);
+
+            await mStableYieldSource.approveMaxAmount();
+
+            expect(await mUSD.allowance(mStableYieldSource.address, savings.address)).to.equal(MaxUint256);
+            expect(await mStableYieldSource.callStatic.approveMaxAmount()).to.equal(true);
+        });
+    });
+
+    describe("depositToken()", () => {
+        it("should return mAsset token address", async () => {
+            expect(await mStableYieldSource.depositToken()).to.equal(mUSD.address);
+        });
     });
 });
