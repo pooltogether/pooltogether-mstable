@@ -15,7 +15,11 @@ contract MStableYieldSourceHarness is MStableYieldSource {
 
     constructor(ISavingsContractV2 _savings) MStableYieldSource(_savings) {}
 
-    function decreaseAllowance(IERC20 token, address spender, uint256 value) external returns (bool) {
+    function decreaseAllowance(
+        IERC20 token,
+        address spender,
+        uint256 value
+    ) external returns (bool) {
         token.safeDecreaseAllowance(spender, value);
         return true;
     }
