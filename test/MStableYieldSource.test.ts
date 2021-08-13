@@ -100,6 +100,10 @@ describe("MStableYieldSource", () => {
             expect(await mUSD.allowance(mStableYieldSource.address, savings.address)).to.equal(MaxUint256);
             expect(await mStableYieldSource.callStatic.approveMaxAmount()).to.equal(true);
         });
+
+        it('should fail if not owner', async () => {
+            await expect(mStableYieldSource.connect(wallet2).callStatic.approveMaxAmount()).to.be.revertedWith('Ownable: caller is not the owner');
+        });
     });
 
     describe("depositToken()", () => {

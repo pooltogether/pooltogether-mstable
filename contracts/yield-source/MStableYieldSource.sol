@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 pragma solidity 0.8.2;
 
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -8,7 +9,7 @@ import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.s
 import { IYieldSource } from "@pooltogether/yield-source-interface/contracts/IYieldSource.sol";
 import { ISavingsContractV2 } from "@mstable/protocol/contracts/interfaces/ISavingsContract.sol";
 
-contract MStableYieldSource is IYieldSource, ReentrancyGuard {
+contract MStableYieldSource is IYieldSource, Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     ISavingsContractV2 public immutable savings;
@@ -51,7 +52,7 @@ contract MStableYieldSource is IYieldSource, ReentrancyGuard {
     /// @notice Approve mStable savings contract to spend max uint256 amount of mAsset.
     /// @dev Emergency function to re-approve max amount if approval amount dropped too low.
     /// @return true if operation is successful.
-    function approveMaxAmount() external returns (bool) {
+    function approveMaxAmount() external onlyOwner returns (bool) {
         IERC20 _mAsset = mAsset;
         address _savings = address(savings);
 
