@@ -33,10 +33,6 @@ contract MStableYieldSource is IYieldSource, ReentrancyGuard {
     /// @param actualAmount The actual amount of assets transferred to the address
     event Redeemed(address indexed from, uint256 requestedAmount, uint256 actualAmount);
 
-    /// @notice Approves max spend by the mAsset
-    /// @param from The user who triggered approve max
-    event ApprovedMax(address indexed from);
-
     constructor(ISavingsContractV2 _savings) ReentrancyGuard() {
         // As immutable storage variables can not be accessed in the constructor,
         // create in-memory variables that can be used instead.
@@ -52,11 +48,13 @@ contract MStableYieldSource is IYieldSource, ReentrancyGuard {
         emit Initialized(_savings);
     }
 
-    /// @notice Approves of the max spend amount for the Savings contract.
-    function approveMax() external {
-        IERC20(savings.underlying()).safeApprove(address(savings), type(uint256).max);
+    /// @notice Approve mStable savings contract to spend max uint256 amount of mAsset.
+    /// @dev Emergency function to re-approve max amount if approval amount dropped too low.
+    /// @return true if operation is successful.
+    function approveMaxAmount() external returns (bool) {
+        mAsset.safeApprove(address(savings), type(uint256).max);
 
-        emit ApprovedMax(msg.sender);
+        return true;
     }
 
     /// @notice Returns the ERC20 mAsset token used for deposits.
