@@ -118,7 +118,7 @@
     "outputs": [
       {
         "internalType": "address",
-        "name": "underlyingMasset",
+        "name": "",
         "type": "address"
       }
     ],

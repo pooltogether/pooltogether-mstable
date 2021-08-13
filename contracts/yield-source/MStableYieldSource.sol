@@ -53,16 +53,16 @@ contract MStableYieldSource is IYieldSource, ReentrancyGuard {
     }
 
     /// @notice Approves of the max spend amount for the Savings contract.
-    function approveMax() public {
+    function approveMax() external {
         IERC20(savings.underlying()).safeApprove(address(savings), type(uint256).max);
 
         emit ApprovedMax(msg.sender);
     }
 
-    /// @notice Returns the ERC20 mAsset token used for deposits
-    /// @return underlyingMasset Underlying mAsset token address. eg mUSD
-    function depositToken() public view override returns (address underlyingMasset) {
-        underlyingMasset = address(mAsset);
+    /// @notice Returns the ERC20 mAsset token used for deposits.
+    /// @return mAsset token address. eg mUSD
+    function depositToken() external view override returns (address) {
+        return address(mAsset);
     }
 
     /// @notice Returns the total balance (in asset tokens).  This includes the deposits and interest.
