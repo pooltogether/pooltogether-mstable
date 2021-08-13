@@ -10,6 +10,7 @@ const hardhatConfig = {
     networks: {
         hardhat: {
             allowUnlimitedContractSize: true,
+            initialBaseFeePerGas: 0, // remove when the following issue is fixed: https://github.com/sc-forks/solidity-coverage/issues/652
         },
         localhost: { url: "http://localhost:7545" },
         fork: {
