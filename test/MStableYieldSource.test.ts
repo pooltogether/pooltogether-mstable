@@ -146,6 +146,24 @@ describe('MStableYieldSource', () => {
         });
     });
 
+    describe('balanceOfToken()', () => {
+        it('should return user balance', async () => {
+            const yieldSourceOwnerBalance = toWei('100');
+            const wallet2Balance = toWei('100');
+
+            await mUSD.connect(yieldSourceOwner).approve(mStableYieldSource.address, yieldSourceOwnerBalance);
+            await mStableYieldSource.connect(yieldSourceOwner).supplyTokenTo(yieldSourceOwnerBalance, yieldSourceOwner.address);
+
+            await mUSD.connect(yieldSourceOwner).transfer(wallet2.address, wallet2Balance);
+
+            await mUSD.connect(wallet2).approve(mStableYieldSource.address, wallet2Balance);
+            await mStableYieldSource.connect(wallet2).supplyTokenTo(wallet2Balance, wallet2.address);
+
+            expect(await mStableYieldSource.balanceOfToken(yieldSourceOwner.address)).to.equal(yieldSourceOwnerBalance);
+            expect(await mStableYieldSource.balanceOfToken(wallet2.address)).to.equal(wallet2Balance);
+        });
+    });
+
     describe('redeemToken()', () => {
         let yieldSourceOwnerBalance: BigNumber;
         let redeemAmount: BigNumber;
