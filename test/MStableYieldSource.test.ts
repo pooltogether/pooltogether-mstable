@@ -29,7 +29,6 @@ describe('MStableYieldSource', () => {
     let contractsOwner: SignerWithAddress;
     let yieldSourceOwner: SignerWithAddress;
     let wallet2: SignerWithAddress;
-    let provider: JsonRpcProvider;
 
     let bAsset: MockERC20;
     let bAsset2: MockERC20;
@@ -71,8 +70,6 @@ describe('MStableYieldSource', () => {
     beforeEach(async () => {
         const accounts = await ethers.getSigners();
         [contractsOwner, yieldSourceOwner, wallet2] = accounts;
-
-        provider = waffle.provider;
 
         debug('Deploying MStableYieldSource instance...');
 
@@ -161,6 +158,27 @@ describe('MStableYieldSource', () => {
 
             expect(await mStableYieldSource.balanceOfToken(yieldSourceOwner.address)).to.equal(yieldSourceOwnerBalance);
             expect(await mStableYieldSource.balanceOfToken(wallet2.address)).to.equal(wallet2Balance);
+        });
+    });
+
+    describe('supplyTokenTo()', () => {
+        let yieldSourceOwnerBalance: BigNumber;
+
+        beforeEach(() => {
+            yieldSourceOwnerBalance = toWei('300');
+        });
+
+        it('should supply mAssets', async () => {
+            await mUSD.connect(yieldSourceOwner).approve(mStableYieldSource.address, yieldSourceOwnerBalance);
+            await mStableYieldSource.connect(yieldSourceOwner).supplyTokenTo(yieldSourceOwnerBalance, yieldSourceOwner.address);
+
+            expect(await mStableYieldSource.balanceOfToken(yieldSourceOwner.address)).to.equal(yieldSourceOwnerBalance);
+        });
+
+        it('should revert if balance is not superior to 0', async () => {
+            await expect(
+                mStableYieldSource.connect(yieldSourceOwner).supplyTokenTo(toWei('0'), yieldSourceOwner.address),
+            ).to.be.revertedWith('Must deposit something');
         });
     });
 

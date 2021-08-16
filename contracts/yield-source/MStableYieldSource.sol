@@ -71,23 +71,23 @@ contract MStableYieldSource is IYieldSource, Ownable, ReentrancyGuard {
     }
 
     /// @notice Returns the total balance (in asset tokens).  This includes the deposits and interest.
-    /// @return Underlying balance of mAsset tokens. eg mUSD
-    function balanceOfToken(address addr) external view override returns (uint256) {
-        uint256 exchangeRate = savings.exchangeRate();
-
+    /// @param _addr User address.
+    /// @return Underlying balance of mAsset tokens. eg mUSD.
+    function balanceOfToken(address _addr) external view override returns (uint256) {
         // userSavings = userCredits * exchangeRate
-        return (imBalances[addr] * exchangeRate) / 1e18;
+        return (imBalances[_addr] * savings.exchangeRate()) / 1e18;
     }
 
     /// @notice Deposits mAsset tokens to the savings contract.
-    /// @param _mAssetAmount The amount of mAsset tokens to be deposited. eg mUSD
-    function supplyTokenTo(uint256 _mAssetAmount, address _to) external override nonReentrant {
-        mAsset.safeTransferFrom(msg.sender, address(this), _mAssetAmount);
+    /// @param _amount The amount of mAsset tokens to be deposited. eg mUSD.
+    /// @param _to User address whose balance will receive the tokens.
+    function supplyTokenTo(uint256 _amount, address _to) external override nonReentrant {
+        mAsset.safeTransferFrom(msg.sender, address(this), _amount);
 
         // Add units of credits (imUSD) issued to sender balance
-        imBalances[_to] += savings.depositSavings(_mAssetAmount);
+        imBalances[_to] += savings.depositSavings(_amount);
 
-        emit Supplied(msg.sender, _to, _mAssetAmount);
+        emit Supplied(msg.sender, _to, _amount);
     }
 
     /// @notice Redeems mAsset tokens from the interest-bearing mAsset. eg. redeems mUSD from imUSD.
