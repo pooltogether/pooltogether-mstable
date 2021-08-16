@@ -47,11 +47,11 @@ describe('MStableYieldSource', () => {
         const mStableYieldSourceFactory = await ethers.getContractFactory('MStableYieldSourceHarness');
         const hardhatMStableYieldSource = await mStableYieldSourceFactory.deploy(savingsAddress);
 
-        return (mStableYieldSource = ((await ethers.getContractAt(
+        return (mStableYieldSource = (await ethers.getContractAt(
             'MStableYieldSourceHarness',
             hardhatMStableYieldSource.address,
             contractsOwner,
-        )) as unknown) as MStableYieldSourceHarness);
+        )) as unknown as MStableYieldSourceHarness);
     };
 
     const createNewSavingsContract = async (): Promise<void> => {
