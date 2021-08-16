@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-pragma solidity 0.8.2;
+pragma solidity 0.8.6;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
@@ -109,7 +109,9 @@ contract MStableYieldSource is IYieldSource, Ownable, ReentrancyGuard {
 
         uint256 _mAssetBalanceAfter = mAsset.balanceOf(address(this));
 
-        unchecked { _mAssetRedeemed = _mAssetBalanceAfter - _mAssetBalanceBefore; }
+        unchecked {
+            _mAssetRedeemed = _mAssetBalanceAfter - _mAssetBalanceBefore;
+        }
 
         mAsset.safeTransfer(msg.sender, _mAssetRedeemed);
 

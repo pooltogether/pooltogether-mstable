@@ -5,7 +5,7 @@
       "avoid-sha3": "warn",
       "avoid-suicide": "error",
       "code-complexity": "warn",
-      "compiler-version": ["error", "0.8.2"],
+      "compiler-version": ["error", "0.8.6"],
       "const-name-snakecase": "warn",
       "func-order": "off",
       "function-max-lines": "warn",
