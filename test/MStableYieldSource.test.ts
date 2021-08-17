@@ -26,13 +26,11 @@ const { AddressZero, MaxUint256 } = ethers.constants;
 const toWei = ethers.utils.parseEther;
 
 describe('MStableYieldSource', () => {
-    let contractsOwner: SignerWithAddress;
+    let yieldSourceManager: SignerWithAddress;
     let yieldSourceOwner: SignerWithAddress;
     let wallet2: SignerWithAddress;
 
-    let bAsset: MockERC20;
-    let bAsset2: MockERC20;
-    let bAssets: MockERC20[];
+    let erc20Token: MockERC20;
     let mAssetMachine: MassetMachine;
     let mStableYieldSource: MStableYieldSourceHarness;
     let mUSD: MockMasset;
@@ -50,7 +48,7 @@ describe('MStableYieldSource', () => {
         return (mStableYieldSource = (await ethers.getContractAt(
             'MStableYieldSourceHarness',
             hardhatMStableYieldSource.address,
-            contractsOwner,
+            yieldSourceOwner,
         )) as unknown as MStableYieldSourceHarness);
     };
 
@@ -58,7 +56,7 @@ describe('MStableYieldSource', () => {
         savingsFactory = new SavingsContract__factory(sa.default.signer);
 
         const impl = await savingsFactory.deploy(nexus.address, mUSD.address);
-        const data = impl.interface.encodeFunctionData('initialize', [sa.default.address, 'Savings Credit', 'imUSD']);
+        const data = impl.interface.encodeFunctionData('initialize', [sa.default.address, 'Interest bearing mUSD', 'imUSD']);
         const proxy = await new AssetProxy__factory(sa.default.signer).deploy(impl.address, sa.dummy4.address, data);
 
         savings = savingsFactory.attach(proxy.address);
@@ -69,7 +67,7 @@ describe('MStableYieldSource', () => {
 
     beforeEach(async () => {
         const accounts = await ethers.getSigners();
-        [contractsOwner, yieldSourceOwner, wallet2] = accounts;
+        [yieldSourceOwner, yieldSourceManager, wallet2] = accounts;
 
         debug('Deploying MStableYieldSource instance...');
 
@@ -86,10 +84,13 @@ describe('MStableYieldSource', () => {
             toWei('100000000'),
         );
 
-        bAsset = await new MockERC20__factory(sa.default.signer).deploy('Mock1', 'MK1', 18, yieldSourceOwner.address, toWei('100000000'));
-        bAsset2 = await new MockERC20__factory(sa.default.signer).deploy('Mock2', 'MK2', 18, yieldSourceOwner.address, toWei('100000000'));
-
-        bAssets = [bAsset, bAsset2];
+        erc20Token = await new MockERC20__factory(sa.default.signer).deploy(
+            'Mock1',
+            'MK1',
+            18,
+            yieldSourceOwner.address,
+            toWei('100000000'),
+        );
 
         await createNewSavingsContract();
 
@@ -110,13 +111,29 @@ describe('MStableYieldSource', () => {
         it('should initialize MStableYieldSource', async () => {
             const mStableYieldSource = await initializeMStableYieldSource(savings.address);
 
-            expect(await mStableYieldSource.owner()).to.equal(contractsOwner.address);
+            expect(await mStableYieldSource.owner()).to.equal(yieldSourceOwner.address);
             expect(await mStableYieldSource.savings()).to.equal(savings.address);
             expect(await mStableYieldSource.mAsset()).to.equal(mUSD.address);
         });
 
         it('should fail if savings is address zero', async () => {
             await expect(initializeMStableYieldSource(AddressZero)).to.be.revertedWith('MStableYieldSource/savings-not-zero-address');
+        });
+    });
+
+    describe('assetManager()', () => {
+        it('should setAssetManager', async () => {
+            await expect(mStableYieldSource.connect(yieldSourceOwner).setAssetManager(yieldSourceManager.address))
+                .to.emit(mStableYieldSource, 'AssetManagerTransferred')
+                .withArgs(ethers.constants.AddressZero, yieldSourceManager.address);
+
+            expect(await mStableYieldSource.assetManager()).to.equal(yieldSourceManager.address);
+        });
+
+        it('should fail to setAssetManager', async () => {
+            await expect(mStableYieldSource.connect(yieldSourceOwner).setAssetManager(ethers.constants.AddressZero)).to.be.revertedWith(
+                'onlyOwnerOrAssetManager/assetManager-not-zero-address',
+            );
         });
     });
 
@@ -170,7 +187,10 @@ describe('MStableYieldSource', () => {
 
         it('should supply mAssets', async () => {
             await mUSD.connect(yieldSourceOwner).approve(mStableYieldSource.address, yieldSourceOwnerBalance);
-            await mStableYieldSource.connect(yieldSourceOwner).supplyTokenTo(yieldSourceOwnerBalance, yieldSourceOwner.address);
+
+            expect(await mStableYieldSource.connect(yieldSourceOwner).supplyTokenTo(yieldSourceOwnerBalance, yieldSourceOwner.address))
+                .to.emit(mStableYieldSource, 'Supplied')
+                .withArgs(yieldSourceOwner.address, yieldSourceOwner.address, yieldSourceOwnerBalance);
 
             expect(await mStableYieldSource.balanceOfToken(yieldSourceOwner.address)).to.equal(yieldSourceOwnerBalance);
         });
@@ -195,7 +215,9 @@ describe('MStableYieldSource', () => {
             await mUSD.connect(yieldSourceOwner).approve(mStableYieldSource.address, yieldSourceOwnerBalance);
             await mStableYieldSource.connect(yieldSourceOwner).supplyTokenTo(yieldSourceOwnerBalance, yieldSourceOwner.address);
 
-            await mStableYieldSource.connect(yieldSourceOwner).redeemToken(redeemAmount);
+            expect(await mStableYieldSource.connect(yieldSourceOwner).redeemToken(redeemAmount))
+                .to.emit(mStableYieldSource, 'Redeemed')
+                .withArgs(yieldSourceOwner.address, redeemAmount, redeemAmount);
 
             expect(await mStableYieldSource.balanceOfToken(yieldSourceOwner.address)).to.equal(yieldSourceOwnerBalance.sub(redeemAmount));
         });
@@ -215,6 +237,46 @@ describe('MStableYieldSource', () => {
             await expect(mStableYieldSource.connect(yieldSourceOwner).redeemToken(redeemAmount)).to.be.revertedWith(
                 'ERC20: burn amount exceeds balance',
             );
+        });
+    });
+
+    describe('transferERC20()', () => {
+        let transferAmount: BigNumber;
+
+        beforeEach(async () => {
+            transferAmount = toWei('10');
+
+            await erc20Token.connect(yieldSourceOwner).transfer(mStableYieldSource.address, transferAmount);
+        });
+
+        it('should transferERC20 if yieldSourceOwner', async () => {
+            expect(await mStableYieldSource.connect(yieldSourceOwner).transferERC20(erc20Token.address, wallet2.address, transferAmount))
+                .to.emit(mStableYieldSource, 'TransferredERC20')
+                .withArgs(yieldSourceOwner.address, wallet2.address, transferAmount, erc20Token.address);
+        });
+
+        it('should transferERC20 if assetManager', async () => {
+            await mStableYieldSource.connect(yieldSourceOwner).setAssetManager(yieldSourceManager.address);
+
+            expect(
+                await mStableYieldSource
+                    .connect(yieldSourceManager)
+                    .transferERC20(erc20Token.address, yieldSourceOwner.address, transferAmount),
+            )
+                .to.emit(mStableYieldSource, 'TransferredERC20')
+                .withArgs(yieldSourceManager.address, yieldSourceOwner.address, transferAmount, erc20Token.address);
+        });
+
+        it('should not allow to transfer imAsset tokens', async () => {
+            await expect(
+                mStableYieldSource.connect(yieldSourceOwner).transferERC20(savings.address, wallet2.address, transferAmount),
+            ).to.be.revertedWith('MStableYieldSource/imAsset-transfer-not-allowed');
+        });
+
+        it('should fail to transferERC20 if not yieldSourceOwner or assetManager', async () => {
+            await expect(
+                mStableYieldSource.connect(wallet2).transferERC20(erc20Token.address, yieldSourceOwner.address, transferAmount),
+            ).to.be.revertedWith('onlyOwnerOrAssetManager/owner-or-manager');
         });
     });
 });
