@@ -14,9 +14,6 @@
     "format": "prettier --config .prettierrc.json --write **/*.ts contracts/**/*.sol",
     "format:file": "prettier --config .prettierrc.json --write",
     "hint": "solhint \"contracts/**/*.sol\"",
-    "start-fork": "yarn hardhat node --no-reset --no-deploy",
-    "task": "yarn hardhat --config tasks.config.ts",
-    "task:fork": "yarn hardhat --config tasks-fork.config.ts",
     "test": "yarn hardhat test",
     "test:fork": "yarn compile && yarn hardhat --config hardhat-fork.config.ts test ./test-fork/*.spec.ts"
   },
