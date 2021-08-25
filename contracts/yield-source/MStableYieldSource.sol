@@ -28,10 +28,10 @@ contract MStableYieldSource is IYieldSource, Ownable, ReentrancyGuard {
     /// @param amount The amount of assets supplied
     event Supplied(address indexed from, address indexed to, uint256 amount);
 
-    /// @notice Emitted when asset tokens are redeemed from the yield source
-    /// @param from The address who is redeeming
-    /// @param requestedAmount The amount that was requested to withdraw
-    /// @param actualAmount The actual amount of assets transferred to the address
+    /// @notice Emitted when asset tokens are redeemed from the yield source.
+    /// @param from Address who is redeeming.
+    /// @param requestedAmount Amount that was requested to withdraw.
+    /// @param actualAmount Actual amount of assets transferred to the address.
     event Redeemed(address indexed from, uint256 requestedAmount, uint256 actualAmount);
 
     constructor(ISavingsContractV2 _savings) ReentrancyGuard() {
@@ -71,41 +71,48 @@ contract MStableYieldSource is IYieldSource, Ownable, ReentrancyGuard {
     }
 
     /// @notice Returns the total balance (in asset tokens).  This includes the deposits and interest.
-    /// @return mAssets The underlying balance of mAsset tokens. eg mUSD
-    function balanceOfToken(address addr) external view override returns (uint256 mAssets) {
-        uint256 exchangeRate = savings.exchangeRate();
-        mAssets = (imBalances[addr] * exchangeRate) / 1e18;
+    /// @param _addr User address.
+    /// @return Underlying balance of mAsset tokens. eg mUSD.
+    function balanceOfToken(address _addr) external view override returns (uint256) {
+        // userSavings = userCredits * exchangeRate
+        return (imBalances[_addr] * savings.exchangeRate()) / 1e18;
     }
 
     /// @notice Deposits mAsset tokens to the savings contract.
-    /// @param _mAssetAmount The amount of mAsset tokens to be deposited. eg mUSD
-    function supplyTokenTo(uint256 _mAssetAmount, address _to) external override nonReentrant {
-        mAsset.safeTransferFrom(msg.sender, address(this), _mAssetAmount);
-        imBalances[_to] += savings.depositSavings(_mAssetAmount);
+    /// @param _amount The amount of mAsset tokens to be deposited. eg mUSD.
+    /// @param _to User address whose balance will receive the tokens.
+    function supplyTokenTo(uint256 _amount, address _to) external override nonReentrant {
+        mAsset.safeTransferFrom(msg.sender, address(this), _amount);
 
-        emit Supplied(msg.sender, _to, _mAssetAmount);
+        // Add units of credits (imUSD) issued to sender balance
+        imBalances[_to] += savings.depositSavings(_amount);
+
+        emit Supplied(msg.sender, _to, _amount);
     }
 
-    /// @notice Redeems mAsset tokens from the interest-beaing mAsset.
-    ///         eg. redeems mUSD from imUSD.
-    /// @param mAssetAmount The amount of mAsset tokens requested to be redeemed. eg mUSD
-    /// @return mAssetsActual The actual amount of mAsset tokens that were received from the redeem. eg mUSD
-    function redeemToken(uint256 mAssetAmount)
+    /// @notice Redeems mAsset tokens from the interest-bearing mAsset. eg. redeems mUSD from imUSD.
+    /// @dev We perform an unchecked substraction of mAsset tokens
+    /// @dev cause `mAssetBalanceAfter` will always be superior or at least equal to `mAssetBalanceBefore`
+    /// @dev so no need to check for underflow or overflow.
+    /// @param _amount Amount of mAsset tokens to redeem. eg mUSD.
+    /// @return _mAssetRedeemed Actual amount of mAsset tokens that were redeemed. eg mUSD.
+    function redeemToken(uint256 _amount)
         external
         override
         nonReentrant
-        returns (uint256 mAssetsActual)
+        returns (uint256 _mAssetRedeemed)
     {
-        uint256 mAssetBalanceBefore = mAsset.balanceOf(address(this));
+        uint256 _mAssetBalanceBefore = mAsset.balanceOf(address(this));
 
-        uint256 creditsBurned = savings.redeemUnderlying(mAssetAmount);
+        // Substracts units of credits (imUSD) burned from sender balance
+        imBalances[msg.sender] -= savings.redeemUnderlying(_amount);
 
-        imBalances[msg.sender] -= creditsBurned;
-        uint256 mAssetBalanceAfter = mAsset.balanceOf(address(this));
-        mAssetsActual = mAssetBalanceAfter - mAssetBalanceBefore;
+        uint256 _mAssetBalanceAfter = mAsset.balanceOf(address(this));
 
-        mAsset.safeTransfer(msg.sender, mAssetsActual);
+        unchecked { _mAssetRedeemed = _mAssetBalanceAfter - _mAssetBalanceBefore; }
 
-        emit Redeemed(msg.sender, mAssetAmount, mAssetsActual);
+        mAsset.safeTransfer(msg.sender, _mAssetRedeemed);
+
+        emit Redeemed(msg.sender, _amount, _mAssetRedeemed);
     }
 }

@@ -109,7 +109,7 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "addr",
+        "name": "_addr",
         "type": "address"
       }
     ],
@@ -117,7 +117,7 @@
     "outputs": [
       {
         "internalType": "uint256",
-        "name": "mAssets",
+        "name": "",
         "type": "uint256"
       }
     ],
@@ -141,11 +141,11 @@
     "inputs": [
       {
         "internalType": "bytes32",
-        "name": "c__0xfc6e550e",
+        "name": "c__0xd2dca569",
         "type": "bytes32"
       }
     ],
-    "name": "c_0xfc6e550e",
+    "name": "c_0xd2dca569",
     "outputs": [],
     "stateMutability": "pure",
     "type": "function"
@@ -241,7 +241,7 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "mAssetAmount",
+        "name": "_amount",
         "type": "uint256"
       }
     ],
@@ -249,7 +249,7 @@
     "outputs": [
       {
         "internalType": "uint256",
-        "name": "mAssetsActual",
+        "name": "_mAssetRedeemed",
         "type": "uint256"
       }
     ],
@@ -280,7 +280,7 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "_mAssetAmount",
+        "name": "_amount",
         "type": "uint256"
       },
       {
