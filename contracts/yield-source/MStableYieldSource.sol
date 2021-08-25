@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 pragma solidity 0.8.6;
 
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -9,7 +8,13 @@ import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.s
 import { IYieldSource } from "@pooltogether/yield-source-interface/contracts/IYieldSource.sol";
 import { ISavingsContractV2 } from "@mstable/protocol/contracts/interfaces/ISavingsContract.sol";
 
-contract MStableYieldSource is IYieldSource, Ownable, ReentrancyGuard {
+import "../access/AssetManager.sol";
+
+/// @title mStable yield source integration contract, implementing PoolTogether's generic yield source interface.
+/// @dev This contract adheres to the PoolTogether yield source interface.
+/// @dev This contract inherits AssetManager which extends Ownable.
+/// @notice Yield source for a PoolTogether prize pool that generates yield by depositing into mStable savings contract.
+contract MStableYieldSource is IYieldSource, AssetManager, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     ISavingsContractV2 public immutable savings;
@@ -34,7 +39,19 @@ contract MStableYieldSource is IYieldSource, Ownable, ReentrancyGuard {
     /// @param actualAmount Actual amount of assets transferred to the address.
     event Redeemed(address indexed from, uint256 requestedAmount, uint256 actualAmount);
 
-    constructor(ISavingsContractV2 _savings) ReentrancyGuard() {
+    /// @notice Emitted when ERC20 tokens other than yield source's tokens are withdrawn from the mStable yield source.
+    /// @param from Address that transferred funds.
+    /// @param to Address that received funds.
+    /// @param amount Amount of tokens transferred.
+    /// @param token ERC20 token transferred.
+    event TransferredERC20(
+        address indexed from,
+        address indexed to,
+        uint256 amount,
+        IERC20 indexed token
+    );
+
+    constructor(ISavingsContractV2 _savings) Ownable() ReentrancyGuard() {
         require(address(_savings) != address(0), "MStableYieldSource/savings-not-zero-address");
 
         // As immutable storage variables can not be accessed in the constructor,
@@ -116,5 +133,24 @@ contract MStableYieldSource is IYieldSource, Ownable, ReentrancyGuard {
         mAsset.safeTransfer(msg.sender, _mAssetRedeemed);
 
         emit Redeemed(msg.sender, _amount, _mAssetRedeemed);
+    }
+
+    /// @notice Transfer ERC20 tokens other than the imAsset tokens held by this contract to the recipient address.
+    /// @dev This function is only callable by the owner or asset manager.
+    /// @param _erc20Token ERC20 token to transfer.
+    /// @param _to Recipient of the tokens.
+    /// @param _amount Amount of tokens to transfer.
+    function transferERC20(
+        IERC20 _erc20Token,
+        address _to,
+        uint256 _amount
+    ) external onlyOwnerOrAssetManager {
+        require(
+            address(_erc20Token) != address(savings),
+            "MStableYieldSource/imAsset-transfer-not-allowed"
+        );
+
+        _erc20Token.safeTransfer(_to, _amount);
+        emit TransferredERC20(msg.sender, _to, _amount, _erc20Token);
     }
 }
