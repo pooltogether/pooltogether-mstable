@@ -8,6 +8,12 @@
 
 # PoolTogether mStable Yield Source
 
+[![Mainnet fork](https://github.com/pooltogether/pooltogether-mstable/actions/workflows/fork.yml/badge.svg)](https://github.com/pooltogether/pooltogether-mstable/actions/workflows/fork.yml)
+[![Coveralls](https://github.com/pooltogether/pooltogether-mstable/actions/workflows/main.yml/badge.svg)](https://github.com/pooltogether/pooltogether-mstable/actions/workflows/main.yml)
+[![Coverage Status](https://coveralls.io/repos/github/pooltogether/pooltogether-mstable/badge.svg?branch=main)](https://coveralls.io/github/pooltogether/pooltogether-mstable?branch=main)
+[![built-with openzeppelin](https://img.shields.io/badge/built%20with-OpenZeppelin-3677FF)](https://docs.openzeppelin.com/)
+
+
 PoolTogether Yield Source that uses [mStable](https://mstable.org/) to generate yield by depositing a mStable asset, eg mUSD, into a mStable interest-bearing savings contract, eg imUSD.
 
 # Usage
