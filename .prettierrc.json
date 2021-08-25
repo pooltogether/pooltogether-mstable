@@ -2,7 +2,6 @@
     "trailingComma": "es5",
     "tabWidth": 4,
     "useTabs": false,
-    "singleQuote": false,
     "printWidth": 140,
     "overrides": [
       {
@@ -10,7 +9,8 @@
         "options": {
           "parser": "typescript",
           "trailingComma": "all",
-          "arrowParens": "always"
+          "arrowParens": "always",
+          "singleQuote": true
         }
       },
       {

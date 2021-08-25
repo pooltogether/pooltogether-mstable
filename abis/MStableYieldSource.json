@@ -125,6 +125,19 @@
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "c__0x8ba2d519",
+        "type": "bytes32"
+      }
+    ],
+    "name": "c_0x8ba2d519",
+    "outputs": [],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "depositToken",
     "outputs": [

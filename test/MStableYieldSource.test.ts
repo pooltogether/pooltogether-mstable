@@ -1,6 +1,6 @@
-import debug from "debug";
+import debug from 'debug';
 
-import { JsonRpcProvider } from "@ethersproject/providers";
+import { JsonRpcProvider } from '@ethersproject/providers';
 import {
     AssetProxy__factory,
     MockERC20,
@@ -12,19 +12,19 @@ import {
     MockSavingsManager__factory,
     SavingsContract,
     SavingsContract__factory,
-} from "@mstable/protocol";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { MassetMachine, StandardAccounts } from "@utils/machines";
-import { expect } from "chai";
-import { ethers, waffle } from "hardhat";
+} from '@mstable/protocol';
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { MassetMachine, StandardAccounts } from '@utils/machines';
+import { expect } from 'chai';
+import { ethers, waffle } from 'hardhat';
 
-import { MStableYieldSourceHarness } from "../types/pooltogether";
+import { MStableYieldSourceHarness } from '../types/pooltogether';
 
-const { MaxUint256 } = ethers.constants;
+const { AddressZero, MaxUint256 } = ethers.constants;
 
 const toWei = ethers.utils.parseEther;
 
-describe("MStableYieldSource", () => {
+describe('MStableYieldSource', () => {
     let contractsOwner: SignerWithAddress;
     let yieldSourceOwner: SignerWithAddress;
     let wallet2: SignerWithAddress;
@@ -41,11 +41,24 @@ describe("MStableYieldSource", () => {
     let savings: SavingsContract;
     let savingsFactory: SavingsContract__factory;
 
+    let isConstructorTest = false;
+
+    const initializeMStableYieldSource = async (savingsAddress: string) => {
+        const mStableYieldSourceFactory = await ethers.getContractFactory('MStableYieldSourceHarness');
+        const hardhatMStableYieldSource = await mStableYieldSourceFactory.deploy(savingsAddress);
+
+        return (mStableYieldSource = ((await ethers.getContractAt(
+            'MStableYieldSourceHarness',
+            hardhatMStableYieldSource.address,
+            contractsOwner,
+        )) as unknown) as MStableYieldSourceHarness);
+    };
+
     const createNewSavingsContract = async (): Promise<void> => {
         savingsFactory = new SavingsContract__factory(sa.default.signer);
 
         const impl = await savingsFactory.deploy(nexus.address, mUSD.address);
-        const data = impl.interface.encodeFunctionData("initialize", [sa.default.address, "Savings Credit", "imUSD"]);
+        const data = impl.interface.encodeFunctionData('initialize', [sa.default.address, 'Savings Credit', 'imUSD']);
         const proxy = await new AssetProxy__factory(sa.default.signer).deploy(impl.address, sa.dummy4.address, data);
 
         savings = savingsFactory.attach(proxy.address);
@@ -60,7 +73,7 @@ describe("MStableYieldSource", () => {
 
         provider = waffle.provider;
 
-        debug("Deploying MStableYieldSource instance...");
+        debug('Deploying MStableYieldSource instance...');
 
         mAssetMachine = await new MassetMachine().initAccounts(accounts);
 
@@ -68,27 +81,45 @@ describe("MStableYieldSource", () => {
         nexus = await new MockNexus__factory(sa.default.signer).deploy(sa.governor.address, sa.governor.address, sa.dummy1.address);
 
         mUSD = await new MockMasset__factory(sa.default.signer).deploy(
-            "mStable USD",
-            "mUSD",
+            'mStable USD',
+            'mUSD',
             18,
             sa.fundManager.address,
-            toWei("100000000"),
+            toWei('100000000'),
         );
-        bAsset = await new MockERC20__factory(sa.default.signer).deploy("Mock1", "MK1", 18, sa.fundManager.address, toWei("100000000"));
-        bAsset2 = await new MockERC20__factory(sa.default.signer).deploy("Mock2", "MK2", 18, sa.fundManager.address, toWei("100000000"));
+
+        bAsset = await new MockERC20__factory(sa.default.signer).deploy('Mock1', 'MK1', 18, sa.fundManager.address, toWei('100000000'));
+        bAsset2 = await new MockERC20__factory(sa.default.signer).deploy('Mock2', 'MK2', 18, sa.fundManager.address, toWei('100000000'));
 
         bAssets = [bAsset, bAsset2];
 
-        createNewSavingsContract();
+        await createNewSavingsContract();
 
-        const mStableYieldSourceFactory = await ethers.getContractFactory("MStableYieldSourceHarness");
-        const hardhatMStableYieldSource = await mStableYieldSourceFactory.deploy(savings.address);
+        if (!isConstructorTest) {
+            mStableYieldSource = await initializeMStableYieldSource(savings.address);
+        }
+    });
 
-        mStableYieldSource = (await ethers.getContractAt(
-            "MStableYieldSourceHarness",
-            hardhatMStableYieldSource.address,
-            contractsOwner,
-        )) as unknown as MStableYieldSourceHarness;
+    describe('constructor()', () => {
+        before(() => {
+            isConstructorTest = true;
+        });
+
+        after(() => {
+            isConstructorTest = false;
+        });
+
+        it('should initialize MStableYieldSource', async () => {
+            const mStableYieldSource = await initializeMStableYieldSource(savings.address);
+
+            expect(await mStableYieldSource.owner()).to.equal(contractsOwner.address);
+            expect(await mStableYieldSource.savings()).to.equal(savings.address);
+            expect(await mStableYieldSource.mAsset()).to.equal(mUSD.address);
+        });
+
+        it('should fail if savings is address zero', async () => {
+            await expect(initializeMStableYieldSource(AddressZero)).to.be.revertedWith('MStableYieldSource/savings-not-zero-address');
+        });
     });
 
     describe('approveMaxAmount()', () => {
@@ -102,12 +133,14 @@ describe("MStableYieldSource", () => {
         });
 
         it('should fail if not owner', async () => {
-            await expect(mStableYieldSource.connect(wallet2).callStatic.approveMaxAmount()).to.be.revertedWith('Ownable: caller is not the owner');
+            await expect(mStableYieldSource.connect(wallet2).callStatic.approveMaxAmount()).to.be.revertedWith(
+                'Ownable: caller is not the owner',
+            );
         });
     });
 
-    describe("depositToken()", () => {
-        it("should return mAsset token address", async () => {
+    describe('depositToken()', () => {
+        it('should return mAsset token address', async () => {
             expect(await mStableYieldSource.depositToken()).to.equal(mUSD.address);
         });
     });

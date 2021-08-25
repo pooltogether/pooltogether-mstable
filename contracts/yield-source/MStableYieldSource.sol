@@ -35,6 +35,8 @@ contract MStableYieldSource is IYieldSource, Ownable, ReentrancyGuard {
     event Redeemed(address indexed from, uint256 requestedAmount, uint256 actualAmount);
 
     constructor(ISavingsContractV2 _savings) ReentrancyGuard() {
+        require(address(_savings) != address(0), "MStableYieldSource/savings-not-zero-address");
+
         // As immutable storage variables can not be accessed in the constructor,
         // create in-memory variables that can be used instead.
         IERC20 mAssetMemory = IERC20(_savings.underlying());
