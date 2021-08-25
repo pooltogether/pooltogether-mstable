@@ -38,15 +38,15 @@ contract MStableYieldSource is IYieldSource, Ownable, ReentrancyGuard {
         require(address(_savings) != address(0), "MStableYieldSource/savings-not-zero-address");
 
         // As immutable storage variables can not be accessed in the constructor,
-        // create in-memory variables that can be used instead.
-        IERC20 mAssetMemory = IERC20(_savings.underlying());
+        // create in-stack variable that can be used instead.
+        IERC20 _mAsset = IERC20(_savings.underlying());
 
-        // infinite approve Savings Contract to transfer mAssets from this contract
-        mAssetMemory.safeApprove(address(_savings), type(uint256).max);
+        // Infinite approve Savings Contract to transfer mAssets from this contract
+        _mAsset.safeApprove(address(_savings), type(uint256).max);
 
-        // save to immutable storage
+        // Save to immutable storage
         savings = _savings;
-        mAsset = mAssetMemory;
+        mAsset = _mAsset;
 
         emit Initialized(_savings);
     }
