@@ -127,32 +127,6 @@
   {
     "inputs": [
       {
-        "internalType": "bytes32",
-        "name": "c__0x8ba2d519",
-        "type": "bytes32"
-      }
-    ],
-    "name": "c_0x8ba2d519",
-    "outputs": [],
-    "stateMutability": "pure",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "c__0xd2dca569",
-        "type": "bytes32"
-      }
-    ],
-    "name": "c_0xd2dca569",
-    "outputs": [],
-    "stateMutability": "pure",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "contract IERC20",
         "name": "token",
         "type": "address"
