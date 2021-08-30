@@ -99,6 +99,8 @@ contract MStableYieldSource is IYieldSource, AssetManager, ReentrancyGuard {
     /// @param _amount The amount of mAsset tokens to be deposited. eg mUSD.
     /// @param _to User address whose balance will receive the tokens.
     function supplyTokenTo(uint256 _amount, address _to) external override nonReentrant {
+        require(_to != address(0), "MStableYieldSource/recipient-not-zero-address");
+
         mAsset.safeTransferFrom(msg.sender, address(this), _amount);
 
         // Add units of credits (imUSD) issued to sender balance

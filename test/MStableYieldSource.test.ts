@@ -200,6 +200,12 @@ describe('MStableYieldSource', () => {
                 mStableYieldSource.connect(yieldSourceOwner).supplyTokenTo(toWei('0'), yieldSourceOwner.address),
             ).to.be.revertedWith('Must deposit something');
         });
+
+        it('should revert if recipient is address zero', async () => {
+            await expect(mStableYieldSource.connect(yieldSourceOwner).supplyTokenTo(yieldSourceOwnerBalance, AddressZero)).to.be.revertedWith(
+                'MStableYieldSource/recipient-not-zero-address',
+            );
+        });
     });
 
     describe('redeemToken()', () => {
